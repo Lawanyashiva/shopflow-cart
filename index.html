@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ShopFlow – Free Shipping Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --card: #1e1e1e;
+      --border: #2a2a2a;
+      --accent: #c8f55a;
+      --accent2: #f55a5a;
+      --text: #f0f0f0;
+      --muted: #888;
+      --promo-h: 52px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── PROMO BAR ── */
+    #promo-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      height: var(--promo-h);
+      background: #111;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 0 48px 0 16px;
+      transition: all .35s ease;
+    }
+    #promo-bar.hidden { display: none; }
+
+    .promo-track {
+      flex: 1;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .promo-msg {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .promo-msg.unlocked { color: var(--accent); }
+    .promo-msg.locked   { color: #f0f0f0; }
+
+    .progress-wrap {
+      width: 100%;
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), #8ef020);
+      border-radius: 99px;
+      width: 0%;
+      transition: width .5s cubic-bezier(.4,0,.2,1);
+    }
+
+    #close-promo {
+      position: absolute;
+      right: 14px;
+      top: 50%; transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+      padding: 4px;
+      transition: color .2s;
+    }
+    #close-promo:hover { color: var(--text); }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -.03em;
+    }
+    .logo span { color: var(--accent); }
+
+    .cart-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 8px 16px;
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .cart-icon { font-size: 16px; }
+    #cart-total-display {
+      color: var(--accent);
+      transition: all .3s;
+    }
+    #clear-cart {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 99px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    #clear-cart:hover {
+      border-color: var(--accent2);
+      color: var(--accent2);
+    }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 56px 32px 32px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(28px, 5vw, 52px);
+      font-weight: 800;
+      letter-spacing: -.04em;
+      line-height: 1.05;
+    }
+    .hero h1 em { color: var(--accent); font-style: normal; }
+    .hero p {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    /* ── PRODUCT GRID ── */
+    .grid-section {
+      padding: 32px 32px 64px;
+    }
+    .section-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform .25s, border-color .25s;
+      display: flex;
+      flex-direction: column;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: #3a3a3a;
+    }
+    .card-visual {
+      height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 56px;
+      background: linear-gradient(135deg, #1a1a1a, #252525);
+      position: relative;
+      overflow: hidden;
+    }
+    .card-visual::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 30%, rgba(200,245,90,.06), transparent 60%);
+    }
+    .card-body {
+      padding: 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .price {
+      font-family: 'Syne', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .add-btn {
+      background: var(--accent);
+      color: #0d0d0d;
+      border: none;
+      border-radius: 99px;
+      padding: 8px 18px;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .add-btn:hover {
+      background: #d8ff6a;
+      transform: scale(1.04);
+    }
+    .add-btn:active { transform: scale(.97); }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 12px 24px;
+      border-radius: 99px;
+      font-size: 14px;
+      font-family: 'Syne', sans-serif;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: transform .35s cubic-bezier(.4,0,.2,1), opacity .35s;
+      opacity: 0;
+      z-index: 200;
+      pointer-events: none;
+    }
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* ── CONFETTI BURST ── */
+    .burst { position: fixed; pointer-events: none; z-index: 999; }
+    .burst span {
+      position: absolute;
+      display: block;
+      width: 8px; height: 8px;
+      border-radius: 2px;
+      animation: fly 1s ease-out forwards;
+    }
+    @keyframes fly {
+      0%   { opacity: 1; transform: translate(0,0) scale(1) rotate(0deg); }
+      100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(.3) rotate(360deg); }
+    }
+
+    @media (max-width: 500px) {
+      header { padding: 16px 16px; }
+      .hero  { padding: 32px 16px 20px; }
+      .grid-section { padding: 20px 16px 48px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- PROMO BAR -->
+<div id="promo-bar">
+  <div class="promo-track">
+    <div class="promo-msg locked" id="promo-msg">Add items to unlock Free Shipping!</div>
+    <div class="progress-wrap">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+  <button id="close-promo" title="Dismiss">×</button>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">Shop<span>Flow</span></div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="cart-badge">
+      <span class="cart-icon">🛒</span>
+      <span id="cart-total-display">$0</span>
+    </div>
+    <button id="clear-cart">Clear Cart</button>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Spend <em>$100</em> &amp; get<br/>Free Shipping 🚀</h1>
+  <p>Add products below — watch the tracker update in real time.</p>
+</div>
+
+<!-- PRODUCTS -->
+<div class="grid-section">
+  <div class="section-label">Featured Products</div>
+  <div class="grid" id="products"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+  const FREE_SHIPPING_THRESHOLD = 100;
+  let cartTotal = 0;
+
+  const products = [
+    { id: 1, emoji: '🎧', title: 'Wireless Headphones', desc: 'Premium over-ear sound with 30hr battery.', price: 30 },
+    { id: 2, emoji: '⌨️', title: 'Mechanical Keyboard', desc: 'Tactile RGB keys for productivity & gaming.', price: 50 },
+    { id: 3, emoji: '🖱️', title: 'Ergonomic Mouse', desc: 'Precision tracking with whisper-quiet clicks.', price: 80 },
+  ];
+
+  // Render products
+  const grid = document.getElementById('products');
+  products.forEach(p => {
+    grid.innerHTML += `
+      <div class="card">
+        <div class="card-visual">${p.emoji}</div>
+        <div class="card-body">
+          <div class="card-title">${p.title}</div>
+          <div class="card-desc">${p.desc}</div>
+          <div class="card-footer">
+            <span class="price">$${p.price}</span>
+            <button class="add-btn" onclick="addToCart(${p.price}, '${p.title}', this)">+ Add to Cart</button>
+          </div>
+        </div>
+      </div>`;
+  });
+
+  // Check localStorage for closed state
+  if (localStorage.getItem('promoClosed') === 'true') {
+    document.getElementById('promo-bar').classList.add('hidden');
+  }
+
+  function updatePromoBar() {
+    const msg   = document.getElementById('promo-msg');
+    const fill  = document.getElementById('progress-fill');
+    const pct   = Math.min((cartTotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
+    fill.style.width = pct + '%';
+
+    if (cartTotal >= FREE_SHIPPING_THRESHOLD) {
+      msg.textContent = '🎉 Congratulations! You\'ve unlocked Free Shipping!';
+      msg.className   = 'promo-msg unlocked';
+    } else {
+      const left = FREE_SHIPPING_THRESHOLD - cartTotal;
+      msg.textContent = `You are $${left} away from Free Shipping!`;
+      msg.className   = 'promo-msg locked';
+    }
+  }
+
+  function addToCart(price, name, btn) {
+    cartTotal += price;
+    document.getElementById('cart-total-display').textContent = '$' + cartTotal;
+    updatePromoBar();
+    showToast(`${name} added! 🛍️`);
+
+    // Button flash
+    btn.textContent = '✓ Added';
+    btn.style.background = '#8ef020';
+    setTimeout(() => {
+      btn.textContent = '+ Add to Cart';
+      btn.style.background = '';
+    }, 900);
+
+    if (cartTotal >= FREE_SHIPPING_THRESHOLD) spawnConfetti();
+  }
+
+  document.getElementById('clear-cart').addEventListener('click', () => {
+    cartTotal = 0;
+    document.getElementById('cart-total-display').textContent = '$0';
+    updatePromoBar();
+    showToast('Cart cleared.');
+  });
+
+  document.getElementById('close-promo').addEventListener('click', () => {
+    document.getElementById('promo-bar').classList.add('hidden');
+    localStorage.setItem('promoClosed', 'true');
+  });
+
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  function spawnConfetti() {
+    const colors = ['#c8f55a','#f55a5a','#5af5e8','#f5c55a','#e85af5'];
+    const wrap = document.createElement('div');
+    wrap.className = 'burst';
+    wrap.style.cssText = `left:50%;top:50%;`;
+    for (let i = 0; i < 28; i++) {
+      const s = document.createElement('span');
+      const angle = Math.random() * 360;
+      const dist  = 60 + Math.random() * 120;
+      const tx = Math.cos(angle * Math.PI / 180) * dist + 'px';
+      const ty = Math.sin(angle * Math.PI / 180) * dist + 'px';
+      s.style.cssText = `background:${colors[i%colors.length]};--tx:${tx};--ty:${ty};animation-delay:${Math.random()*.2}s`;
+      wrap.appendChild(s);
+    }
+    document.body.appendChild(wrap);
+    setTimeout(() => wrap.remove(), 1200);
+  }
+</script>
+</body>
+</html>
